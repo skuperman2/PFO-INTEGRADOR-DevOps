@@ -7,7 +7,8 @@ WORKDIR /app
 
 # Copy requirements and install dependencies
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+	&& pip install --no-cache-dir hypercorn
 
 # Copy the rest of the application code
 COPY . .
@@ -18,6 +19,21 @@ EXPOSE 5000
 # Set environment variables for Quart
 ENV QUART_APP=app:app
 ENV QUART_ENV=production
+ENV PORT=5000
+ENV HYPERCORN_WORKERS=1
 
-# Start the Quart app
-CMD ["python", "-m", "quart", "run", "--host", "0.0.0.0", "--port", "5000"]
+# Add entrypoint script and create a non-root user to run the app
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Create a non-root user and ensure app ownership
+RUN adduser --disabled-password --gecos "" appuser || true \
+	&& chown -R appuser:appuser /app
+
+USER appuser
+
+# Entrypoint will initialize the SQLite DB (create tables) then exec the CMD
+ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]
+
+# Use Hypercorn (ASGI server) for production; fallback to `quart run` if needed.
+CMD ["hypercorn", "app:app", "--bind", "0.0.0.0:5000", "--workers", "${HYPERCORN_WORKERS}"]

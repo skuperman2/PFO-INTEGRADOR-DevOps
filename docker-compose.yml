@@ -6,11 +6,15 @@ services:
     container_name: ecomdata_app
     ports:
       - "5000:5000"
+    # For development you can uncomment the volume to mount the source
     volumes:
       - .:/app
     environment:
       - QUART_APP=app:app
       - QUART_ENV=production
+    # Use env_file to load sensitive or configurable values from .env (see .env.example)
+    env_file:
+      - .env
     restart: unless-stopped
     # Uncomment if you want to persist the SQLite DB outside the container
     # volumes:

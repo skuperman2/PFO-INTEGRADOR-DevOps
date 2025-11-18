@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    image: skuperman2/ecomdata:latest
+    container_name: ecomdata_app_prod
+    ports:
+      - "5000:5000"
+    environment:
+      - QUART_APP=app:app
+      - QUART_ENV=production
+      # Database stored inside the named volume under /app/data
+      - DATABASE_URL=sqlite+aiosqlite:////app/data/ecomdata.db
+    volumes:
+      - ecomdata_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  ecomdata_data:
+    driver: local
