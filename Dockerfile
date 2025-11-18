@@ -35,5 +35,5 @@ USER appuser
 # Entrypoint will initialize the SQLite DB (create tables) then exec the CMD
 ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]
 
-# Use Hypercorn (ASGI server) for production; fallback to `quart run` if needed.
-CMD ["hypercorn", "app:app", "--bind", "0.0.0.0:5000", "--workers", "${HYPERCORN_WORKERS}"]
+# Use Hypercorn (ASGI server) for production; expand workers env var via shell
+CMD ["sh", "-c", "hypercorn app:app --bind 0.0.0.0:5000 --workers ${HYPERCORN_WORKERS:-1}"]
