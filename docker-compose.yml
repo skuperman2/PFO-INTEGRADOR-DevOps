@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: ecomdata_app
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+    environment:
+      - QUART_APP=app:app
+      - QUART_ENV=production
+    restart: unless-stopped
+    # Uncomment if you want to persist the SQLite DB outside the container
+    # volumes:
+    #   - ./ecomdata.db:/app/ecomdata.db
+
+# Add other services here if needed (e.g., for production DB, cache, etc.)

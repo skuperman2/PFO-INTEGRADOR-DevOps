@@ -1,3 +1,11 @@
+import pytest
+# Fixture pytest para la conexión a la base de datos
+@pytest.fixture(scope="module")
+def conexion():
+    db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'ecomdata.db')
+    conn = sqlite3.connect(db_path)
+    yield conn
+    conn.close()
 """
 Script para verificar la integridad de la base de datos.
 Valida que todas las tablas existan y sean accesibles.
@@ -43,22 +51,22 @@ def test_database_tables(conexion):
     print("\n" + "="*70)
     print("VERIFICACIÓN DE TABLAS EN BASE DE DATOS")
     print("="*70 + "\n")
-    
+
     TABLAS_ESPERADAS = [
-        'roles', 'usuarios', 'categorias', 'productos', 'clientes', 
-        'ventas', 'detalle_ventas', 'pagos', 'inventario', 
-        'configuracion_general', 'configuracion_notificaciones', 'configuracion_seguridad'
+        'roles', 'usuarios', 'categorias', 'productos', 'clientes',
+        'ventas', 'detalles_venta', 'pagos', 'inventarios',
+        'configuraciones_generales', 'configuraciones_notificaciones', 'configuraciones_seguridad'
     ]
-    
+
     try:
         cursor = conexion.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
         tablas_existentes = [tabla[0] for tabla in cursor.fetchall()]
-        
+
         exitosas = 0
         faltantes = []
         extra = []
-        
+
         for tabla in TABLAS_ESPERADAS:
             if tabla in tablas_existentes:
                 cursor.execute(f"PRAGMA table_info({tabla})")
@@ -70,16 +78,16 @@ def test_database_tables(conexion):
             else:
                 print(f"✗ {tabla}: NO ENCONTRADA")
                 faltantes.append(tabla)
-        
+
         for tabla in tablas_existentes:
             if tabla not in TABLAS_ESPERADAS:
                 print(f"? {tabla}: tabla extra encontrada")
                 extra.append(tabla)
-        
+
         print("\n" + "="*70)
         print(f"Resultado: {exitosas} tablas OK, {len(faltantes)} faltantes, {len(extra)} extras")
         print("="*70 + "\n")
-        
+
         return len(faltantes) == 0
     except Exception as e:
         print(f"✗ Error al verificar tablas: {e}")
