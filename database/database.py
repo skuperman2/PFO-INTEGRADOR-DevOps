@@ -9,13 +9,13 @@ from contextlib import asynccontextmanager
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     sqlite_path = os.getenv("SQLITE_PATH", "./ecomdata.db")
-    # If absolute path, ensure URL has the correct slashes
-    if os.path.isabs(sqlite_path):
-        DATABASE_URL = f"sqlite+aiosqlite:///{sqlite_path}"
-    else:
-        DATABASE_URL = f"sqlite+aiosqlite:///{sqlite_path}"
+    # construct sqlite URL (relative or absolute path)
+    DATABASE_URL = f"sqlite+aiosqlite:///{sqlite_path}"
 
-engine = create_async_engine(DATABASE_URL, echo=True, future=True)
+# Controlar el logging de SQLAlchemy por variable de entorno (false por defecto en prod)
+ECHO = os.getenv("SQLALCHEMY_ECHO", "false").lower() in ("1", "true", "yes")
+
+engine = create_async_engine(DATABASE_URL, echo=ECHO, future=True)
 
 AsyncSessionLocal = sessionmaker(
     bind=engine,
@@ -29,9 +29,20 @@ Base = declarative_base()
 # -- Función get_db() para usar en rutas ---
 @asynccontextmanager
 async def get_db():
-    """Provee una sesión de base de datos asíncrona para usar en rutas."""
+    """Provee una sesión de base de datos asíncrona para usar en rutas.
+
+    Hace rollback si ocurre una excepción durante el uso de la sesión,
+    y cierra la sesión siempre al finalizar.
+    """
     async with AsyncSessionLocal() as session:
         try:
             yield session
+        except Exception:
+            # Asegurar rollback en caso de error antes de propagar la excepción
+            try:
+                await session.rollback()
+            except Exception:
+                pass
+            raise
         finally:
             await session.close()
