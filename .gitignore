@@ -28,3 +28,4 @@ pip-wheel-metadata/
 # Optional: env files
 .env
 .venv.env
+.env.exemple
